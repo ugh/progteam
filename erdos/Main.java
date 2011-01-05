@@ -52,11 +52,18 @@ public class Main
 		}
 		*/
 
-		Map<String, Integer> distMap = erdos2(graph);
+        Set<String> names1 = new HashSet<String>();
+        List<String> names2 = new LinkedList<String>();
 
 		for (int i = 0; i < numNames; i++) {
 			String name = in.nextLine().trim();
-			
+            names1.add(name);
+            names2.add(name);
+        }
+
+		Map<String, Integer> distMap = erdos(graph, names1);
+
+		for (String name : names2) {
 			if (distMap.containsKey(name)) {
 				System.out.println(name + ": " + distMap.get(name));
 			}
@@ -69,16 +76,12 @@ public class Main
 
 	public static void addToGraph(Map<String, Set<String>> graph, String paperEntry) 
 	{
-		//		System.out.println("PAPER WOO: "+paperEntry);
 		String[] namesAndPaper = paperEntry.split(":");
 		if (namesAndPaper.length != 2) {
-			System.out.println("Error reading in paper entry: " + paperEntry);
 			return;
 		}
 		
 		List<String> names = getNameList(namesAndPaper[0]);
-		//		for (String name : names)
-		//			System.out.println("NAME: "+name);
 
 		for (String name : names) {
 			Set<String> adjList;
@@ -109,7 +112,6 @@ public class Main
 		int start = 0;
 		int end = nameStr.indexOf(',', start);
 		if (end == -1) {
-			System.out.println("Bad name list in: " + nameStr);
 			return names;
 		}
 		end = nameStr.indexOf(',', end+1);
@@ -120,7 +122,6 @@ public class Main
 			start = end+1;
 			end = nameStr.indexOf(',', start);
 			if (end == -1) {
-				System.out.println("Bad name list in: " + nameStr);
 				return names;
 			}
 			end = nameStr.indexOf(',', end+1 );
@@ -135,56 +136,10 @@ public class Main
 	}
 
 
-	public static int erdos(Map<String, Set<String>> graph, String nameToFind)
-	{
-		if (!graph.containsKey(ERDOS)) {
-			//			System.out.println("[WARN] Our boy Erdos isn't in the graph!");
-			return -1;
-		}
-
-		Queue<String> namesToVisit = new LinkedList<String>();
-		namesToVisit.offer(ERDOS);
-
-		Map<String, Integer> distMap = new HashMap<String, Integer>();
-		distMap.put(ERDOS, 0);
-
-		List<String> seenNames = new LinkedList<String>();
-		seenNames.add(ERDOS);
-
-		while (namesToVisit.peek() != null) {
-			String currentName = namesToVisit.poll();
-			//			System.out.println("Current Name: " + currentName);
-			int dist = -1;
-			if (distMap.containsKey(currentName))
-				dist = distMap.get(currentName);
-			else {
-				System.out.println("[ERROR] Name not found in distMap: " + currentName);
-				return dist;
-			}
-
-			if (currentName.equals(nameToFind)) {
-				return dist;
-			}
-
-			for ( String child : graph.get(currentName) ) {
-
-				if (!seenNames.contains(child)) {
-					seenNames.add(currentName);
-					namesToVisit.offer(child);
-				}
-
-				int childDist = -1;
-				if ( distMap.containsKey(child) ) 
-					childDist = distMap.get(child);
-
-				if (childDist > dist + 1 || childDist == -1)
-					distMap.put(child, dist + 1);				
-			}
-		}
-		return -1;
-	}
-
-	public static Map<String, Integer> erdos2(Map<String, Set<String>> graph)
+    // update so that it takes another param, a list of names to find.
+    // have the routine return early if it finds all the names
+	public static Map<String, Integer> erdos(Map<String, Set<String>> graph,
+                                             Set<String> namesToFind)
 	{
 		Map<String, Integer> distMap = new HashMap<String, Integer>();
 
@@ -196,9 +151,6 @@ public class Main
 
 		Queue<String> namesToVisit = new LinkedList<String>();
 		namesToVisit.offer(ERDOS);
-
-		List<String> seenNames = new LinkedList<String>();
-		seenNames.add(ERDOS);
 
 		while (namesToVisit.peek() != null) {
 			String currentName = namesToVisit.poll();
@@ -212,18 +164,17 @@ public class Main
 			}
 
 			for ( String child : graph.get(currentName) ) {
-
-				if (!seenNames.contains(child)) {
-					seenNames.add(currentName);
+				if (!distMap.containsKey(child)) {
+					distMap.put(child, dist + 1);
 					namesToVisit.offer(child);
+
+                    if (namesToFind.contains(child)) {
+                        namesToFind.remove(child);
+                        if (namesToFind.isEmpty()) {
+                            return distMap;
+                        }
+                    }
 				}
-
-				int childDist = -1;
-				if ( distMap.containsKey(child) ) 
-					childDist = distMap.get(child);
-
-				if (childDist > dist + 1 || childDist == -1)
-					distMap.put(child, dist + 1);				
 			}
 		}
 		return distMap;
